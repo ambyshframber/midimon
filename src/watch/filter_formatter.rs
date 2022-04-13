@@ -5,7 +5,7 @@ use std::time::Duration;
 use midir::{MidiInput, MidiInputConnection};
 
 use crate::circular_buf::CircularBuf;
-use crate::utils::MidiMessage;
+use crate::utils::{MidiMessage, PROGRAM_NAME, get_best_matching_idx};
 use super::{FFCommand, Ignore};
 
 pub struct FilterFormatter {
@@ -47,6 +47,9 @@ impl FilterFormatter {
             let mut commands = Vec::new();
             // format midi msgs here
             for msg in self.command_rx.try_iter() { // get all pending commands
+                if msg == FFCommand::Quit {
+                    break
+                }
                 commands.push(msg)
             }
             for c in commands {
@@ -62,13 +65,41 @@ impl FilterFormatter {
         }
     }
     fn do_command(&mut self, command: FFCommand) {
+        self.internal_msg_dirty = true;
         match command {
             FFCommand::List => {
-                println!("listing midi devices...")
+                println!("listing midi devices...");
+                match MidiInput::new(PROGRAM_NAME) {
+                    Ok(midi_in) => {
+                        for (i, p) in midi_in.ports().iter().enumerate() {
+                            println!("{}: {}", i, midi_in.port_name(&p).unwrap())
+                        }
+                    }
+                    Err(_e) => {
+                        println!("could not create midi input")
+                    }
+                }
+            }
+            FFCommand::Connect(name) => {
+                match MidiInput::new(PROGRAM_NAME) {
+                    Ok(midi_in) => {
+                        let ports = midi_in.ports();
+                        match get_best_matching_idx(&midi_in, &ports, &name).unwrap() {
+                            Some(idx) => {
+                                self.connections.push(midi_in.connect(&ports[idx], PROGRAM_NAME, |s, m, d| send_msg(s, m, d), self.midi_tx.clone()).unwrap())
+                            }
+                            None => {
+                                println!("no matching port found for {}", name)
+                            }
+                        }
+                    }
+                    Err(_e) => {
+                        println!("could not create midi input")
+                    }
+                }
             }
             _ => {}
         }
-        self.internal_msg_dirty = true;
     }
 }
 
@@ -78,7 +109,7 @@ pub struct FilterSettings {
 }
 
 
-fn send_msg(stamp: u64, msg: &[u8], data: Sender<MidiMessage>) {
+fn send_msg(stamp: u64, msg: &[u8], data: &mut Sender<MidiMessage>) {
     let mut bytes = [0; 3];
     for (i, b) in msg.iter().enumerate() {
         bytes[i] = *b // won't panic unless you have midi demons

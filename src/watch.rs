@@ -28,13 +28,9 @@ pub fn watch(args: Vec<String>) -> Result<(), (i32, String)> {
     let (tx, rx) = channel::<FFCommand>();
 
     let mut filt = FilterFormatter::new(100, rx);
-    let filt_thread = spawn(move || {
-        filt.main_loop()
-    });
-
-    tx.send(FFCommand::List);
-
-    filt_thread.join().unwrap();
+    tx.send(FFCommand::List).unwrap();
+    tx.send(FFCommand::Connect(String::from("28:0"))).unwrap();
+    filt.main_loop();
 
     Ok(())
 }
@@ -44,10 +40,12 @@ struct SetupOptions {
     pub devices: Vec<String>,
     pub verbosity: i32,
 }
+#[derive(PartialEq)]
 pub enum FFCommand {
     Connect(String),
     Disconnect(usize),
-    List
+    List,
+    Quit
 }
 #[derive(Default)]
 pub struct Ignore {
