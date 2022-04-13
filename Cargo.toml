@@ -1,5 +1,5 @@
 [package]
-name = "midi_mon"
+name = "midimon"
 version = "0.1.0"
 edition = "2021"
 
