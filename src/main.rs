@@ -7,6 +7,7 @@ use list::list;
 mod watch;
 mod list;
 mod utils;
+mod circular_buf;
 
 fn main() {
     match run() {
