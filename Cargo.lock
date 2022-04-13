@@ -182,6 +182,7 @@ dependencies = [
  "argparse",
  "fuzzy-matcher",
  "midir",
+ "termion",
  "termsize",
 ]
 

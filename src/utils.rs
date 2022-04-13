@@ -40,3 +40,6 @@ pub fn rewrap<T>(result: Result<T, impl Error>, verbosity: i32, code_if_err: i32
         }
     }
 }
+
+pub type MidiMessage = (u64, [u8; 3]);
+

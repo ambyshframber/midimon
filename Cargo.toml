@@ -10,3 +10,7 @@ midir = "0.7.0"
 argparse = "0.2.2"
 fuzzy-matcher = "*"
 termsize = "0.1"
+termion = "1.5.6"
+
+[features]
+debug = []
